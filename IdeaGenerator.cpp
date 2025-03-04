@@ -1,13 +1,14 @@
 #include <fstream> // For FileHandling
-#include <iostream>// For I/O
-#include <vector>  // For <vector>
-#include <string>  // For substr()
+#include <iostream> // For I/O
+#include <vector> // For <vector>
+#include <string> // For substr()
 #include <sstream> // for stringStream
 #include <cstdlib> // For rand() and srand()
-#include <ctime>   // For time() 
-#include <thread>  // For this_thread::sleep_for
-#include <chrono>  // For chrono::milliseconds
+#include <ctime> // For time() 
+#include <thread> // For this_thread::sleep_for
+#include <chrono> // For chrono::milliseconds
 #include <iomanip> // For setw
+#include <limits> // For numeric_limits
 
 using namespace std;
 
@@ -37,7 +38,7 @@ public:
 
     // Function to extract all categories from inputFile
     vector<string> extractCategoryName() {
-        vector<string> catItems;                                                            // catItems to store categories which are started with #
+        vector<string> catItems; // catItems to store categories which are started with #
         while (getline(inputFile, line)) {
             if (!line.empty() && line[0] == '#') {
                 string item = line.substr(1);
@@ -49,7 +50,7 @@ public:
 
     // Function to extract values for a specific category
     vector<string> extractValuesForCategory(const string& category) {
-        vector<string> values;                                                                     // values vector to store words in each category
+        vector<string> values; // values vector to store words in each category
         inputFile.clear();
         inputFile.seekg(0);
         bool foundCategory = false;
@@ -66,8 +67,7 @@ public:
                         values.push_back(value);
                     }
                 }
-                break; 
-				// Exit after finding the category
+                break; // Exit after finding the category
             }
         }
         return values;
@@ -81,7 +81,7 @@ private:
     vector<string> catItems; 
     int choiceCount, id;
     vector<int> choosenVector; 
-    vector<vector<string>> values;                                                           // To store values for each chosen category
+    vector<vector<string>> values; // To store values for each chosen category
 
 public:
     // Constructor to initialize FileManager and extract categories
@@ -97,28 +97,40 @@ public:
     }
 
     void createChoiceVector() {
-        cout << "Enter number of Categories need to forge Idea: \n";
-        cin >> choiceCount;
+    while (true) {
+        cout << "Enter total number of Categories need to forge Idea: \n";
+        while (!(cin >> choiceCount) || choiceCount <= 0) {
+            cout << "Invalid input. Please enter a positive integer: ";
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+        }
 
         if (choiceCount <= catItems.size()) { 
-            cout << "Enter IDs of all " << choiceCount << " categories (0 to " << catItems.size() - 1 << "): \n";
-            for (int i = 0; i < choiceCount; i++) {
-                cin >> id;
-                if (id >= 0 && id < catItems.size()) { 
-                    choosenVector.push_back(id);
-                    
-                    // Extract values for the chosen category
-                    vector<string> categoryValues = fm.extractValuesForCategory(catItems[id]);
-                    values.push_back(categoryValues);
-                } else {
-                    cout << "Invalid ID: " << id << ". Please enter a valid ID." << endl;
-                    i--; 
-                }
-            }
+            break; // Exit the loop if the input is valid
         } else {
-            cout << "Invalid Value: --Given number is greater than total categories available" << endl;
+            cout << "Invalid Value: --Given number is greater than total categories available. Please try again." << endl;
         }
     }
+
+    cout << "Enter IDs of all " << choiceCount << " categories (0 to " << catItems.size() - 1 << "): \n";
+    for (int i = 0; i < choiceCount; i++) {
+        	while (true) {
+            	cin >> id;
+            	if (cin.fail() || id < 0 || id >= catItems.size()) {
+                	cout << "Invalid ID: " << id << ". Please enter a valid ID (0 to " << catItems.size() - 1 << "): ";
+                	cin.clear(); // Clear the error flag
+            	    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            	} 
+				else {
+            	    choosenVector.push_back(id);
+            	    // Extract values for the chosen category
+            	    vector<string> categoryValues = fm.extractValuesForCategory(catItems[id]);
+                	values.push_back(categoryValues);
+ 			    	break; 
+            	}
+        	}
+    	}
+	}
     
     void displaySelectedCategories() {
         cout << "Selected categories are: \n";
@@ -142,6 +154,7 @@ public:
     void reset() {
         choosenVector.clear();
         values.clear();
+        choiceCount = 0;
     }
 };
 
@@ -152,13 +165,17 @@ private:
 
 public:
     RandomWordGenerator(UserHandler& uh) : userHandler(uh) {
-        srand(static_cast<unsigned int>(time(0)));                                  // Seed for random number generation
+        srand(static_cast<unsigned int>(time(0))); // Seed for random number generation
     }
 
     void generateRandomWords() {
         int numWords;
         cout << "Enter the number of words to generate from each category (max 5): ";
-        cin >> numWords;
+        while (!(cin >> numWords) || numWords <= 0) {
+            cout << "Invalid input. Please enter a positive integer: ";
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+        }
 
         if (numWords > 5) {
             cout << "Maximum number of words is 5. Setting to 5." << endl;
@@ -169,18 +186,17 @@ public:
         vector<int> chosenVector = userHandler.getChosenVector();
         vector<string> catItems = userHandler.getCategoryNames(); 
 
-
         // Loading animation
         cout << "Generating random words";
         const char spinner[] = {'|', '/', '-', '\\'};
         for (int i = 0; i < 20; ++i) { 
             cout << "\r" << "Generating random words " << spinner[i % 4] << flush;
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));                             // Delay for 200 milliseconds
+            std::this_thread::sleep_for(std::chrono::milliseconds(200)); // Delay for 200 milliseconds
         }
         cout << endl;
 
         // Delay before printing the random words
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));                                // Additional delay of 1 second
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Additional delay of 1 second
 
         // Print the table header
         cout << "+----------------+----------------+" << endl;
@@ -230,7 +246,7 @@ int main() {
         cin >> userChoice;
 
         // Validate user input
-        while (userChoice != 'O' && userChoice != 'X') {
+        while (userChoice != 'o' && userChoice != 'x' && userChoice != 'O' && userChoice != 'X') {
             cout << "Invalid input. Please press 'O' for Yes or 'X' for No: ";
             cin >> userChoice;
         }
@@ -238,7 +254,7 @@ int main() {
         // Reset UserHandler for the next iteration
         uh.reset();
 
-    } while (userChoice == 'O');
+    } while (userChoice == 'o' || userChoice == 'O');
 
     cout << "Exiting the program. Goodbye!" << endl;
     return 0;
